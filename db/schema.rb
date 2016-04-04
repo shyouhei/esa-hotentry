@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160404103554) do
+ActiveRecord::Schema.define(version: 20160404105755) do
 
   create_table "posts", force: :cascade do |t|
     t.string   "namespace"
@@ -25,5 +25,7 @@ ActiveRecord::Schema.define(version: 20160404103554) do
     t.datetime "created_at",       null: false
     t.datetime "updated_at",       null: false
   end
+
+  add_index "posts", ["namespace", "number"], name: "index_posts_on_namespace_and_number", unique: true
 
 end
