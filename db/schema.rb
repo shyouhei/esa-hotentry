@@ -11,6 +11,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 0) do
+ActiveRecord::Schema.define(version: 20160404103554) do
+
+  create_table "posts", force: :cascade do |t|
+    t.string   "namespace"
+    t.integer  "number"
+    t.text     "name"
+    t.text     "url"
+    t.integer  "revision_number"
+    t.integer  "comments_count"
+    t.integer  "stargazers_count"
+    t.integer  "watchers_count"
+    t.datetime "created_at",       null: false
+    t.datetime "updated_at",       null: false
+  end
 
 end
