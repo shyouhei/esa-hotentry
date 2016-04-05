@@ -1,3 +1,5 @@
+# coding: utf-8
+require 'stringio'
 require 'esa'
 
 class Post < ApplicationRecord
@@ -35,7 +37,22 @@ class Post < ApplicationRecord
     end
   end
 
+  def self.to_md
+    crawl
+    ret = StringIO.new
+    ret.printf "| 温度 | 記事 | \n"
+    ret.printf "| -------- | -------- |\n"
+    all.map {|i|[i, i.temperture]}.sort_by {|(i, t)|-t}.first(20).each do |(i, t)|
+      ret.printf "| %5.2f | %s |\n", t, i.to_md
+    end
+    return ret.string
+  end
+
   def temperture
     comments_count + Math.log(stargazers_count) + 7/6r * Math.log(watchers_count) + Math.log10(revision_number) + (created_at.to_r - Time.now.to_r) / 86400
+  end
+
+  def to_md
+    sprintf '[#%d:%s](%s)', number, name, url
   end
 end
