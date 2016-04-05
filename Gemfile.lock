@@ -1,6 +1,5 @@
-GIT
-  remote: git://github.com/rails/rails.git
-  revision: 8040e55063abde6eeaac2702ca9961ce34a2d6c7
+GEM
+  remote: https://rubygems.org/
   specs:
     actioncable (5.0.0.beta3)
       actionpack (= 5.0.0.beta3)
@@ -12,25 +11,6 @@ GIT
       activejob (= 5.0.0.beta3)
       mail (~> 2.5, >= 2.5.4)
       rails-dom-testing (~> 1.0, >= 1.0.5)
-    activejob (5.0.0.beta3)
-      activesupport (= 5.0.0.beta3)
-      globalid (>= 0.3.6)
-    rails (5.0.0.beta3)
-      actioncable (= 5.0.0.beta3)
-      actionmailer (= 5.0.0.beta3)
-      actionpack (= 5.0.0.beta3)
-      actionview (= 5.0.0.beta3)
-      activejob (= 5.0.0.beta3)
-      activemodel (= 5.0.0.beta3)
-      activerecord (= 5.0.0.beta3)
-      activesupport (= 5.0.0.beta3)
-      bundler (>= 1.3.0, < 2.0)
-      railties (= 5.0.0.beta3)
-      sprockets-rails (>= 2.0.0)
-
-GEM
-  remote: https://rubygems.org/
-  specs:
     actionpack (5.0.0.beta3)
       actionview (= 5.0.0.beta3)
       activesupport (= 5.0.0.beta3)
@@ -44,6 +24,9 @@ GEM
       erubis (~> 2.7.0)
       rails-dom-testing (~> 1.0, >= 1.0.5)
       rails-html-sanitizer (~> 1.0, >= 1.0.2)
+    activejob (5.0.0.beta3)
+      activesupport (= 5.0.0.beta3)
+      globalid (>= 0.3.6)
     activemodel (5.0.0.beta3)
       activesupport (= 5.0.0.beta3)
     activerecord (5.0.0.beta3)
@@ -99,6 +82,18 @@ GEM
       json
     rack-test (0.6.3)
       rack (>= 1.0)
+    rails (5.0.0.beta3)
+      actioncable (= 5.0.0.beta3)
+      actionmailer (= 5.0.0.beta3)
+      actionpack (= 5.0.0.beta3)
+      actionview (= 5.0.0.beta3)
+      activejob (= 5.0.0.beta3)
+      activemodel (= 5.0.0.beta3)
+      activerecord (= 5.0.0.beta3)
+      activesupport (= 5.0.0.beta3)
+      bundler (>= 1.3.0, < 2.0)
+      railties (= 5.0.0.beta3)
+      sprockets-rails (>= 2.0.0)
     rails-deprecated_sanitizer (1.0.3)
       activesupport (>= 4.2.0.alpha)
     rails-dom-testing (1.0.7)
@@ -161,10 +156,13 @@ DEPENDENCIES
   byebug
   esa
   puma
-  rails!
+  rails (= 5.0.0beta3)
   sqlite3
   test-unit-rails
   tzinfo-data
+
+RUBY VERSION
+   ruby 2.3.0p0
 
 BUNDLED WITH
    1.12.0.pre.2
