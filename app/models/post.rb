@@ -11,12 +11,13 @@ class Post < ApplicationRecord
     1.upto Float::INFINITY do |i|
       posts = esa.posts page: i, per_page: 100
       raise posts.inspect unless posts.status == 200
+      flag = false
       posts.body['posts'].each_with_index do |j, k|
         n     = j['number']
         ctime = Time.iso8601 j['created_at']
         mtime = Time.iso8601 j['updated_at']
         obj   = find_by namespace: space, number: n
-        return self if obj&.updated_at == mtime and not force # bail out no new things beyond
+        flag ||= (obj&.updated_at != mtime)
         obj ||= new
         obj.update_attributes(
           namespace: space,
@@ -30,8 +31,9 @@ class Post < ApplicationRecord
           created_at: ctime,
           updated_at: mtime
         )
-        Rails.logger.info "done #{i*100+k}/#{posts.body['total_count']})"
       end
+      Rails.logger.info "done #{i*100}/#{posts.body['total_count']}"
+      return self if !flag && !force # bail out no new things beyond
       sleep(15 *  60.0 / 75.0)
       return self unless posts.body["next_page"]
     end
