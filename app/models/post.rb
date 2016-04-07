@@ -3,6 +3,8 @@ require 'stringio'
 require 'esa'
 
 class Post < ApplicationRecord
+  has_many :comments
+
   def self.crawl force: false
     space = Rails.application.secrets.esa_space
     token = Rails.application.secrets.esa_token

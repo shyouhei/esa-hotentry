@@ -1,0 +1,17 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  namespace: MyString
+  number: 1
+  post_id: 
+  url: MyText
+  revision_number: 1
+  stargazers_count: 1
+
+two:
+  namespace: MyString
+  number: 1
+  post_id: 
+  url: MyText
+  revision_number: 1
+  stargazers_count: 1
