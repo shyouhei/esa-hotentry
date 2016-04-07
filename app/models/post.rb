@@ -5,34 +5,43 @@ require 'esa'
 class Post < ApplicationRecord
   has_many :comments
 
+  def self.import space, json
+    ctime = Time.iso8601 json['created_at']
+    mtime = Time.iso8601 json['updated_at']
+    obj   = find_by namespace: space, number: json['number']
+    return false, obj if obj&.updated_at == mtime
+    obj ||= new
+    obj.update_attributes(
+      namespace: space,
+      number: json['number'],
+      name: json['full_name'],
+      url: json['url'],
+      revision_number: json['revision_number'],
+      comments_count: json['comments_count'],
+      stargazers_count: json['stargazers_count'],
+      watchers_count: json['watchers_count'],
+      created_at: ctime,
+      updated_at: mtime
+    )
+    return true, obj
+  end
+
   def self.crawl force: false
     space = Rails.application.secrets.esa_space
     token = Rails.application.secrets.esa_token
     esa   = Esa::Client.new current_team: space, access_token: token
 
     1.upto Float::INFINITY do |i|
-      posts = esa.posts page: i, per_page: 100
+      posts = esa.posts page: i, per_page: 100, include: 'comments'
       raise posts.inspect unless posts.status == 200
       flag = false
-      posts.body['posts'].each_with_index do |j, k|
-        n     = j['number']
-        ctime = Time.iso8601 j['created_at']
-        mtime = Time.iso8601 j['updated_at']
-        obj   = find_by namespace: space, number: n
-        flag ||= (obj&.updated_at != mtime)
-        obj ||= new
-        obj.update_attributes(
-          namespace: space,
-          number: n,
-          name: j['full_name'],
-          url: j['url'],
-          revision_number: j['revision_number'],
-          comments_count: j['comments_count'],
-          stargazers_count: j['stargazers_count'],
-          watchers_count: j['watchers_count'],
-          created_at: ctime,
-          updated_at: mtime
-        )
+      posts.body['posts'].each do |j|
+        f1, obj = import space, j
+        flag ||= f1
+        j['comments'].each do |k|
+          f2 = Comment.import space, k, obj
+          flag ||= f2
+        end
       end
       Rails.logger.info "done #{i*100}/#{posts.body['total_count']}"
       return self if !flag && !force # bail out no new things beyond
@@ -43,6 +52,7 @@ class Post < ApplicationRecord
 
   def self.to_md
     crawl
+    @@id2updated_at = Comment.updated_at_per_post
     ret = StringIO.new
     ret.printf "| 温度 | 記事 | \n"
     ret.printf "| -------- | -------- |\n"
@@ -52,8 +62,12 @@ class Post < ApplicationRecord
     return ret.string
   end
 
+  def last_action_at
+    [ @@id2updated_at[id], updated_at ].compact.max
+  end
+
   def temperture
-    comments_count + Math.log(stargazers_count) + 7/6r * Math.log(watchers_count) + Math.log10(revision_number) + (created_at.to_r - Time.now.to_r) / 86400
+    comments_count + Math.log(stargazers_count) + 7/6r * Math.log(watchers_count) + Math.log10(revision_number) + (last_action_at.to_r - Time.now.to_r) / 86400
   end
 
   def to_md
