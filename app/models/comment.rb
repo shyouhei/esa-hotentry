@@ -20,11 +20,7 @@ class Comment < ApplicationRecord
     return true
   end
 
-  TZ = ActiveSupport::TimeZone['UTC']
   def self.updated_at_per_post
-    a = group(:post_id).pluck(:post_id, 'MAX(updated_at)')
-    a.each {|a| a[1] = TZ.parse a[1] }
-    a.flatten!(1)
-    return Hash[*a]
+    group(:post_id).maximum(:updated_at)
   end
 end
