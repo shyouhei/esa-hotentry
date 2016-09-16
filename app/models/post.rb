@@ -56,7 +56,8 @@ class Post < ApplicationRecord
     ret = StringIO.new
     ret.printf "| 温度 | 記事 | \n"
     ret.printf "| -------- | -------- |\n"
-    all.map {|i|[i, i.temperture]}.sort_by {|(i, t)|-t}.first(20).each do |(i, t)|
+    all.map {|i|[i, i.temperture]}.sort_by {|(i, t)|-t}.each do |(i, t)|
+      break if t < 1
       ret.printf "| %5.2f | %s |\n", t, i.to_md
     end
     return ret.string
@@ -67,7 +68,8 @@ class Post < ApplicationRecord
   end
 
   def temperture
-    comments_count + Math.log(stargazers_count) + 7/6r * Math.log(watchers_count) + Math.log10(revision_number) + (last_action_at.to_r - Time.now.to_r) / 86400
+    (last_action_at.to_r - Time.now.to_r) / 86400 +
+      Math.log(comments_count + 1) + Math.log(comments_count + stargazers_count + 7/6r * watchers_count + 1/7r * revision_number)
   end
 
   def to_md
