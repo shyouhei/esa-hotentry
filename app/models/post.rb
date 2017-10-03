@@ -32,16 +32,12 @@ class Post < ApplicationRecord
     esa   = Esa::Client.new current_team: space, access_token: token
 
     1.upto Float::INFINITY do |i|
-      posts = esa.posts page: i, per_page: 100, include: 'comments'
+      posts = esa.posts page: i, per_page: 100
       raise posts.inspect unless posts.status == 200
       flag = false
       posts.body['posts'].each do |j|
         f1, obj = import space, j
         flag ||= f1
-        j['comments'].each do |k|
-          f2 = Comment.import space, k, obj
-          flag ||= f2
-        end
       end
       Rails.logger.info "done #{i*100}/#{posts.body['total_count']}"
       return self if !flag && !force # bail out no new things beyond
@@ -51,7 +47,8 @@ class Post < ApplicationRecord
   end
 
   def self.to_md
-    crawl
+    crawl # force: true
+    Comment.crawl # force: true
     @@id2updated_at = Comment.updated_at_per_post
     ret = StringIO.new
     ret.printf "| 温度 | 記事 | \n"
