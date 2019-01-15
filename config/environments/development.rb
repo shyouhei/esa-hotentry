@@ -38,5 +38,5 @@ Rails.application.configure do
   # routes, locales, etc. This feature depends on the listen gem.
   # config.file_watcher = ActiveSupport::EventedFileUpdateChecker
 
-  config.active_record.record_timestamps = false
+  config.active_record.record_timestamps = true
 end
