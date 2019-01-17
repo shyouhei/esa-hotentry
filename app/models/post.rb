@@ -1,17 +1,15 @@
 # coding: utf-8
+require 'time'
 require 'stringio'
 require 'esa'
 
 class Post < ApplicationRecord
   has_many :comments
 
-  def self.import space, json
+  def assign_json json, space, esa
     ctime = Time.iso8601 json['created_at']
     mtime = Time.iso8601 json['updated_at']
-    obj   = find_by namespace: space, number: json['number']
-    return false, obj if obj&.updated_at == mtime
-    obj ||= new
-    obj.update_attributes(
+    assign_attributes(
       namespace: space,
       number: json['number'],
       name: json['full_name'],
@@ -23,7 +21,61 @@ class Post < ApplicationRecord
       created_at: ctime,
       updated_at: mtime
     )
-    return true, obj
+    json['comments'].each do |i|
+      c = Comment.import space, i, esa, self
+      self.comments << c
+    end
+  end
+
+  def self.import space, json, esa
+    obj  = find_or_initialize_by namespace: space, number: json['number']
+    obj.assign_json json, space, esa
+    return obj
+  end
+
+  def self.find_or_crawl_by esa, url
+    return nil unless %r'://(?<space>.+?).esa.io/posts/(?<id>\d+)' =~ url
+    i = id.to_i
+    obj = find_or_initialize_by namespace: space, number: i
+    if obj.new_record?
+      Rails.logger.info "crawl post id:#{i}"
+      res = esa.post i, include: 'comments'
+      if res.status == 200
+        sleep(60.0 * 15.0 / 75.0)
+      else
+        Rails.logger.error "failed #{res.inspect}"
+        raise res.inspect
+      end
+      obj.assign_json res.body, space, esa
+    end
+    return obj
+  end
+
+  def self.crawl_page esa, space, t, page, buf
+    if t
+      Rails.logger.info "crawl posts until:#{t} page:#{page} per_page:100"
+      query = t.strftime 'updated:<%FT%z'
+      posts = esa.posts q: query, page: page, per_page: 100, include: 'comments'
+    else
+      Rails.logger.info "crawl posts page:#{page} per_page:100"
+      posts = esa.posts page: page, per_page: 100, include: 'comments'
+    end
+    unless posts.status == 200
+      Rails.logger.error "failed #{posts.inspect}"
+      raise posts.inspect
+    end
+    flag = false
+    ary = nil
+    ActiveRecord::Base.transaction do
+      buf[0] += posts.body['posts'].size
+      ary = posts.body['posts'].map do |i|
+        import space, i, esa
+      end
+      flag = ary.any?(&:changed?)
+      ary.map(&:save)
+      Rails.logger.info "crawl_page #{buf[0]}/#{posts.body['total_count']}"
+    end
+    return flag, ary.last, posts.body['next_page']
   end
 
   def self.crawl force: false
@@ -31,18 +83,43 @@ class Post < ApplicationRecord
     token = Rails.application.secrets.esa_token
     esa   = Esa::Client.new current_team: space, access_token: token
 
-    1.upto Float::INFINITY do |i|
-      posts = esa.posts page: i, per_page: 100
-      raise posts.inspect unless posts.status == 200
-      flag = false
-      posts.body['posts'].each do |j|
-        f1, obj = import space, j
-        flag ||= f1
+    t = nil
+    x = [0]
+    catch :tag do
+      loop do
+        obj = nil
+        1.upto 99 do |i|
+          flag, obj, next_page = crawl_page esa, space, t, i, x
+          if !next_page
+            throw :tag, nil
+          elsif force
+            sleep(60.0 * 15.0 / 75.0)
+          elsif flag
+            next
+          else
+            throw :tag, nil
+          end
+        end
+        t = obj.updated_at
       end
-      Rails.logger.info "done #{i*100}/#{posts.body['total_count']}"
-      return self if !flag && !force # bail out no new things beyond
-      sleep(15 *  60.0 / 75.0)
-      return self unless posts.body["next_page"]
+    end
+    if force
+      fmt = '://%s.esa.io/posts/%d'
+      where(namespace: space).maximum('number').downto(0) do |i|
+        unless exists?(namespace: space, number: i)
+          url = fmt % [space, i]
+          begin
+            post = find_or_crawl_by esa, url
+          rescue RuntimeError
+            # 404 etc.
+            sleep(60.0 * 15.0 / 75.0)
+            post = new(namespace: space, number: i,
+                       created_at: Time.at(0), updated_at: Time.at(0))
+          ensure
+            post.save
+          end
+        end
+      end
     end
   end
 
