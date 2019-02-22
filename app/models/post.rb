@@ -130,7 +130,11 @@ class Post < ApplicationRecord
     ret = StringIO.new
     ret.printf "| 温度 | 記事 | \n"
     ret.printf "| -------- | -------- |\n"
-    all.map {|i|[i, i.temperture]}.sort_by {|(i, t)|-t}.each do |(i, t)|
+    where.not(comments_count: nil) \
+      .map {|i|[i, i.temperture]} \
+      .sort_by {|(i, t)|-t} \
+      .take(100) \
+      .each do |(i, t)|
       break if t < 1
       ret.printf "| %5.2f | %s |\n", t, i.to_md
     end
